@@ -1,31 +1,14 @@
 import numpy as np
 import mindquantum as mq
-from mindquantum import (
-    Simulator,
-    Circuit,
-    Hamiltonian,
-    QubitOperator,
-    RY,
-    RZ,
-    CNOT,
-    H,
-    S,
-    X,
-    Y,
-    Z
-)
+from mindquantum import Simulator, Circuit, Hamiltonian, QubitOperator, RY, RZ, CNOT, H, S, X, Y, Z
 from mindspore import context
 import matplotlib.pyplot as plt
 from typing import List
 
-# 设置MindSpore运行模式
 context.set_context(mode=context.PYNATIVE_MODE, device_target="CPU")
 
-# ==============================
-# 1. 全局参数配置
-# ==============================
 n_qubits = 2
-delta = 2.0
+delta = 1.0
 
 num_architectures = 3
 max_epochs = 500
@@ -38,9 +21,7 @@ hamiltonian = Hamiltonian(base_hamiltonian)
 theoretical_energy = -abs(1 + 1 + delta)
 print(f"理论基态能量: {theoretical_energy:.6f}")
 
-# ==============================
-# 2. 预定义Clifford架构集合
-# ==============================
+# 预定义Clifford架构集合
 def get_clifford_architectures(n_qubits: int) -> List[Circuit]:
     architectures = []
     circ1 = Circuit()
@@ -64,9 +45,6 @@ def get_clifford_architectures(n_qubits: int) -> List[Circuit]:
 
 clifford_architectures = get_clifford_architectures(n_qubits)
 
-# ==============================
-# 3. 核心函数：计算变换后的哈密顿量
-# ==============================
 def get_transformed_hamiltonian(arch_index: int, phi_params: np.ndarray) -> Hamiltonian:
     circ = Circuit()
     for i in range(n_qubits):
@@ -117,9 +95,8 @@ def get_transformed_hamiltonian(arch_index: int, phi_params: np.ndarray) -> Hami
                 h_t_qo += QubitOperator(term_str.strip(), coeff)
         return Hamiltonian(h_t_qo)
 
-# ==============================
-# 4. 更强的ansatz线路与能量计算
-# ==============================
+
+# ansatz线路与能量计算
 def ansatz_circuit():
     circ = Circuit()
     for i in range(2):
@@ -143,9 +120,8 @@ def softmax(x):
     e_x = np.exp(x - np.max(x))
     return e_x / e_x.sum()
 
-# ==============================
-# 5. 概率化架构搜索算法（增强版）
-# ==============================
+
+# 概率化架构搜索算法（增强版）
 def probabilistic_architecture_search():
     theta = np.random.uniform(0, 2*np.pi, 8)
     phi = np.random.choice([0, np.pi/2, np.pi, 3*np.pi/2], size=2*n_qubits)
@@ -201,7 +177,7 @@ def probabilistic_architecture_search():
             print(f"架构softmax概率: {probs}")
 
         if epoch > 20 and float(best_energy) < theoretical_energy + 0.05:
-            print(f"收敛于Epoch {epoch+1} (接近理论值)")
+            print(f"收敛于Epoch {epoch+1}")
             break
         if epoch > 50 and abs(np.mean(energy_history[-10:]) - best_energy) < tol:
             print(f"收敛于Epoch {epoch+1}")
@@ -210,13 +186,11 @@ def probabilistic_architecture_search():
     if best_params is not None:
         theta, phi, alpha = best_params
     else:
-        print("警告: 未找到最佳参数，使用最终参数")
+        print("未找到最佳参数")
 
     return theta, phi, alpha, energy_history
 
-# ==============================
-# 6. 多次trial选最优
-# ==============================
+# 多次trial选最优
 n_trials = 5
 best_energy = float('inf')
 for trial in range(n_trials):
@@ -227,9 +201,6 @@ for trial in range(n_trials):
         best_energy = min_energy
         best_theta, best_phi, best_alpha, best_history = theta, phi, alpha, energy_history
 
-# ==============================
-# 7. 输出结果与绘图
-# ==============================
 print("\n" + "="*50)
 print("概率化架构搜索最终结果:")
 print(f"最优能量: {float(min(best_history)):.6f}")
@@ -240,7 +211,6 @@ print(f"架构概率分布: {best_alpha/np.sum(best_alpha)}")
 print("="*50 + "\n")
 
 
-# 画图
 def moving_average(x, w=5):
     return np.convolve(x, np.ones(w)/w, mode='valid')
 
@@ -264,7 +234,7 @@ for i in range(num_architectures):
     energy = compute_energy(best_theta, i, best_phi)
     print(f"架构 {i+1}: 能量 = {float(energy):.6f} (概率权重: {(best_alpha[i]/np.sum(best_alpha)):.4f})")
 
-# 验证理论基态能量（可选）
+# 理论基态能量验证
 if __name__ == "__main__":
     import scipy
     Z = np.array([[1,0],[0,-1]])
@@ -272,4 +242,4 @@ if __name__ == "__main__":
     Y = np.array([[0,-1j],[1j,0]])
     H = np.kron(Z,Z) + np.kron(X,X) + np.kron(Y,Y)
     eigvals = np.linalg.eigvalsh(H)
-    print("理论哈密顿量本征值:", eigvals)
+    print(eigvals)
